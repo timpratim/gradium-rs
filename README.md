@@ -1,10 +1,9 @@
 # Gradium
 
-This repo contains a Rust client for the Gradium API.
+This repo contains a Rust client for the [Gradium Voice AI API](https://gradium.ai).
 
 ```bash
 cargo run -r --example tts -- \
     --text "Hello, this is a test of the gradium text-to-speech system. Please ensure that you follow the signs." \ 
     --out-file ~/tmp/out.wav \
-    --api-key gsk_...
 ```
