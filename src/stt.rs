@@ -175,7 +175,7 @@ impl SttStream {
 
     /// Returns the audio frame size in samples.
     pub fn frame_size(&self) -> u32 {
-        self.ready.frame_size as u32
+        self.ready.frame_size
     }
 
     /// Returns the names of available text streams.

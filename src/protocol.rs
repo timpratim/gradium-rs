@@ -231,9 +231,9 @@ pub mod stt {
         /// Audio sample rate in Hz (expected input rate)
         pub sample_rate: u32,
         /// Audio frame size in samples (recommended chunk size)
-        pub frame_size: f64, // TODO(laurent): switch this to u32 once the server has been updated.
-        /// Delay in tokens before transcription begins
-        pub delay_in_tokens: f64,
+        pub frame_size: u32,
+        /// Delay in frames before transcription begins
+        pub delay_in_frames: f64,
         /// Names of available text streams
         pub text_stream_names: Vec<String>,
         /// Request ID for tracking this session
