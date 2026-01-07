@@ -73,6 +73,7 @@ impl SttStream {
             Some(m) => m,
         };
         let first_msg: p::Response = serde_json::from_str(&first_msg)?;
+        println!("here1");
         let ready = match first_msg {
             p::Response::Ready(ready) => ready,
             p::Response::Error { code, message } => {
@@ -80,6 +81,7 @@ impl SttStream {
             }
             _ => anyhow::bail!("unexpected first message from server: {:?}", first_msg),
         };
+        println!(">>> {ready:?}");
         Ok(Self { ws, ready })
     }
 

@@ -21,6 +21,7 @@ pub struct Client {
     server_addr: String,
     use_https: bool,
     path: String,
+    additional_headers: Vec<(String, String)>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,6 +60,7 @@ impl Client {
             server_addr: location.server_addr().to_string(),
             use_https: true,
             path: "api".to_string(),
+            additional_headers: Vec::new(),
         }
     }
 
@@ -98,6 +100,7 @@ impl Client {
             server_addr: "us.api.gradium.ai".to_string(),
             use_https: true,
             path: "api".to_string(),
+            additional_headers: Vec::new(),
         }
     }
 
@@ -120,7 +123,14 @@ impl Client {
             server_addr: "eu.api.gradium.ai".to_string(),
             use_https: true,
             path: "api".to_string(),
+            additional_headers: Vec::new(),
         }
+    }
+
+    /// Adds an additional HTTP header to be sent with each request (builder pattern).
+    pub fn with_additional_header(mut self, key: &str, value: &str) -> Self {
+        self.additional_headers.push((key.to_string(), value.to_string()));
+        self
     }
 
     /// Creates a new client from environment variables.
@@ -337,6 +347,10 @@ impl Client {
         let headers = request.headers_mut();
         headers.insert("x-api-key", HeaderValue::from_str(&self.api_key)?);
         headers.insert("x-api-source", HeaderValue::from_str("rust-client")?);
+        for (key, value) in self.additional_headers.iter() {
+            let key = ws::http::header::HeaderName::from_bytes(key.as_bytes())?;
+            headers.insert(key, HeaderValue::from_str(value.as_str())?);
+        }
         let (ws, _response) =
             tokio_tungstenite::connect_async_with_config(request, None, true).await?;
         Ok(ws)
