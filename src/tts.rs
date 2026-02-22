@@ -409,23 +409,32 @@ impl TtsMultiplexStream {
         Ok(Self { ws })
     }
 
-    /// Sends a Setup message. The caller should set `client_req_id` and
-    /// `close_ws_on_eos` on the setup before calling this.
+    /// Sends a Setup message for a new multiplexed request.
+    ///
+    /// The setup must have `client_req_id` set (to route responses) and
+    /// `close_ws_on_eos` set to `false` (to keep the connection open for
+    /// subsequent requests). Returns an error if either is misconfigured.
     pub async fn send_setup(&mut self, setup: p::Setup) -> Result<()> {
         use futures_util::SinkExt;
 
+        if setup.client_req_id.is_none() {
+            anyhow::bail!("client_req_id must be set for multiplexed requests");
+        }
+        if setup.close_ws_on_eos != Some(false) {
+            anyhow::bail!("close_ws_on_eos must be set to false for multiplexed requests");
+        }
         let req = serde_json::to_string(&p::Request::Setup(setup))?;
         self.ws.send(tokio_tungstenite::tungstenite::Message::Text(req.into())).await?;
         Ok(())
     }
 
-    /// Sends text to be synthesized, optionally tagged with a `client_req_id`.
-    pub async fn send_text(&mut self, text: &str, client_req_id: Option<&str>) -> Result<()> {
+    /// Sends text to be synthesized, tagged with a `client_req_id`.
+    pub async fn send_text(&mut self, text: &str, client_req_id: &str) -> Result<()> {
         use futures_util::SinkExt;
 
         let req = p::Request::Text(p::Text {
             text: text.to_string(),
-            client_req_id: client_req_id.map(|s| s.to_string()),
+            client_req_id: Some(client_req_id.to_string()),
         });
         let req = serde_json::to_string(&req)?;
         self.ws.send(tokio_tungstenite::tungstenite::Message::Text(req.into())).await?;
@@ -433,11 +442,11 @@ impl TtsMultiplexStream {
     }
 
     /// Signals end-of-stream for a specific request.
-    pub async fn send_eos(&mut self, client_req_id: Option<&str>) -> Result<()> {
+    pub async fn send_eos(&mut self, client_req_id: &str) -> Result<()> {
         use futures_util::SinkExt;
 
         let req = p::Request::EndOfStream {
-            client_req_id: client_req_id.map(|s| s.to_string()),
+            client_req_id: Some(client_req_id.to_string()),
         };
         let req = serde_json::to_string(&req)?;
         self.ws.send(tokio_tungstenite::tungstenite::Message::Text(req.into())).await?;
@@ -448,7 +457,9 @@ impl TtsMultiplexStream {
     ///
     /// Unlike `TtsStream::next_message()`, this returns `EndOfStream` and `Error`
     /// as `Ok(Some(response))` values so the caller can inspect `client_req_id`.
-    /// Returns `Ok(None)` only when the WebSocket connection closes.
+    /// Returns `Ok(None)` only when the WebSocket connection itself closes, which
+    /// is not expected during normal operation — typically only on the server's
+    /// 5-minute inactivity timeout.
     pub async fn next_message(&mut self) -> Result<Option<p::Response>> {
         let msg = crate::client::next_message(&mut self.ws).await?;
         let msg = match msg {
@@ -468,22 +479,32 @@ impl TtsMultiplexStream {
 }
 
 impl TtsMultiplexSender {
-    /// Sends a Setup message.
+    /// Sends a Setup message for a new multiplexed request.
+    ///
+    /// The setup must have `client_req_id` set (to route responses) and
+    /// `close_ws_on_eos` set to `false` (to keep the connection open for
+    /// subsequent requests). Returns an error if either is misconfigured.
     pub async fn send_setup(&mut self, setup: p::Setup) -> Result<()> {
         use futures_util::SinkExt;
 
+        if setup.client_req_id.is_none() {
+            anyhow::bail!("client_req_id must be set for multiplexed requests");
+        }
+        if setup.close_ws_on_eos != Some(false) {
+            anyhow::bail!("close_ws_on_eos must be set to false for multiplexed requests");
+        }
         let req = serde_json::to_string(&p::Request::Setup(setup))?;
         self.ws.send(tokio_tungstenite::tungstenite::Message::Text(req.into())).await?;
         Ok(())
     }
 
-    /// Sends text to be synthesized, optionally tagged with a `client_req_id`.
-    pub async fn send_text(&mut self, text: &str, client_req_id: Option<&str>) -> Result<()> {
+    /// Sends text to be synthesized, tagged with a `client_req_id`.
+    pub async fn send_text(&mut self, text: &str, client_req_id: &str) -> Result<()> {
         use futures_util::SinkExt;
 
         let req = p::Request::Text(p::Text {
             text: text.to_string(),
-            client_req_id: client_req_id.map(|s| s.to_string()),
+            client_req_id: Some(client_req_id.to_string()),
         });
         let req = serde_json::to_string(&req)?;
         self.ws.send(tokio_tungstenite::tungstenite::Message::Text(req.into())).await?;
@@ -491,11 +512,11 @@ impl TtsMultiplexSender {
     }
 
     /// Signals end-of-stream for a specific request.
-    pub async fn send_eos(&mut self, client_req_id: Option<&str>) -> Result<()> {
+    pub async fn send_eos(&mut self, client_req_id: &str) -> Result<()> {
         use futures_util::SinkExt;
 
         let req = p::Request::EndOfStream {
-            client_req_id: client_req_id.map(|s| s.to_string()),
+            client_req_id: Some(client_req_id.to_string()),
         };
         let req = serde_json::to_string(&req)?;
         self.ws.send(tokio_tungstenite::tungstenite::Message::Text(req.into())).await?;
@@ -507,7 +528,9 @@ impl TtsMultiplexReceiver {
     /// Receives the next message from the server.
     ///
     /// Returns `EndOfStream` and `Error` as values (not `None`/`Err`).
-    /// Returns `Ok(None)` only when the WebSocket connection closes.
+    /// Returns `Ok(None)` only when the WebSocket connection itself closes, which
+    /// is not expected during normal operation — typically only on the server's
+    /// 5-minute inactivity timeout.
     pub async fn next_message(&mut self) -> Result<Option<p::Response>> {
         let msg = crate::client::next_message_receiver(&mut self.ws).await?;
         let msg = match msg {

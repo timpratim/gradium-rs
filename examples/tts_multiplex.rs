@@ -39,8 +39,8 @@ async fn main() -> Result<()> {
                 .with_client_req_id(req_id)
                 .with_close_ws_on_eos(false);
             tx.send_setup(setup).await?;
-            tx.send_text(text, Some(req_id)).await?;
-            tx.send_eos(Some(req_id)).await?;
+            tx.send_text(text, req_id).await?;
+            tx.send_eos(req_id).await?;
         }
         Ok::<(), anyhow::Error>(())
     });

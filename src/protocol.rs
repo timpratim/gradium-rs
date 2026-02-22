@@ -67,7 +67,7 @@ pub mod tts {
         /// Optional client request ID for multiplexing multiple requests over a single WebSocket
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub client_req_id: Option<String>,
-        /// When true, the server will NOT close the WebSocket after EndOfStream,
+        /// When set to `false`, the server will NOT close the WebSocket after EndOfStream,
         /// allowing additional requests on the same connection (multiplexing).
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub close_ws_on_eos: Option<bool>,
