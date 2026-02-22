@@ -61,6 +61,9 @@ pub mod tts {
         pub voice_id: Option<String>,
         /// The desired audio output format
         pub output_format: super::AudioFormat,
+        /// Optional pronunciation dictionary ID to customize word pronunciation
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub pronunciation_id: Option<String>,
         /// Custom config for the TTS model in JSON format
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub json_config: Option<String>,
@@ -73,6 +76,7 @@ pub mod tts {
                 voice: None,
                 voice_id: None,
                 output_format: super::AudioFormat::Pcm,
+                pronunciation_id: None,
                 json_config: None,
             }
         }
@@ -96,6 +100,11 @@ pub mod tts {
 
         pub fn with_output_format(mut self, output_format: super::AudioFormat) -> Self {
             self.output_format = output_format;
+            self
+        }
+
+        pub fn with_pronunciation_id(mut self, pronunciation_id: &str) -> Self {
+            self.pronunciation_id = Some(pronunciation_id.to_string());
             self
         }
 
