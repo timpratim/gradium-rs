@@ -445,9 +445,7 @@ impl TtsMultiplexStream {
     pub async fn send_eos(&mut self, client_req_id: &str) -> Result<()> {
         use futures_util::SinkExt;
 
-        let req = p::Request::EndOfStream {
-            client_req_id: Some(client_req_id.to_string()),
-        };
+        let req = p::Request::EndOfStream { client_req_id: Some(client_req_id.to_string()) };
         let req = serde_json::to_string(&req)?;
         self.ws.send(tokio_tungstenite::tungstenite::Message::Text(req.into())).await?;
         Ok(())
@@ -515,9 +513,7 @@ impl TtsMultiplexSender {
     pub async fn send_eos(&mut self, client_req_id: &str) -> Result<()> {
         use futures_util::SinkExt;
 
-        let req = p::Request::EndOfStream {
-            client_req_id: Some(client_req_id.to_string()),
-        };
+        let req = p::Request::EndOfStream { client_req_id: Some(client_req_id.to_string()) };
         let req = serde_json::to_string(&req)?;
         self.ws.send(tokio_tungstenite::tungstenite::Message::Text(req.into())).await?;
         Ok(())
